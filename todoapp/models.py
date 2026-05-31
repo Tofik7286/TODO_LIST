@@ -1,3 +1,4 @@
 from django.db import models
 
-# Create your models here.
+# Registration uses Django's built-in User model (django.contrib.auth.models.User).
+# Fields: first_name (exposed as "name"), email, password (hashed via set_password).
