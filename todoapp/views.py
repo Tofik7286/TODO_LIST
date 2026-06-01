@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
-from .forms import UserRegistrationForm, LoginForm
+from django.contrib import messages
+from .forms import UserRegistrationForm, LoginForm, ProfileForm
 from .models import Task
 
 
@@ -46,3 +47,24 @@ def login(request):
 def logout_view(request):
     auth_logout(request)
     return redirect('login')
+
+
+@login_required
+def profile(request):
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, user=request.user)
+        if form.is_valid():
+            user = request.user
+            name = form.cleaned_data['name'].strip()
+            if name:
+                user.first_name = name
+            new_password = form.cleaned_data.get('new_password')
+            if new_password:
+                user.set_password(new_password)
+                update_session_auth_hash(request, user)
+            user.save()
+            messages.success(request, 'Profile updated successfully.')
+            return redirect('profile')
+    else:
+        form = ProfileForm(user=request.user, initial={'name': request.user.first_name})
+    return render(request, 'todoapp/profile.html', {'form': form})
