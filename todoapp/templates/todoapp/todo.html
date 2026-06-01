@@ -11,9 +11,22 @@
     <div class="w-full max-w-4xl mx-auto">
 
         <!-- Header -->
-        <div class="mb-8">
-            <h1 class="text-2xl font-bold text-gray-900">My Tasks</h1>
-            <p class="text-sm text-gray-500 mt-1">Manage your daily tasks</p>
+        <div class="flex items-start justify-between mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">My Tasks</h1>
+                <p class="text-sm text-gray-500 mt-1">Manage your daily tasks</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-sm text-gray-600">
+                    {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.email }}{% endif %}
+                </span>
+                <form method="POST" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-500 hover:border-red-300 hover:text-red-600 transition-colors">
+                        Logout
+                    </button>
+                </form>
+            </div>
         </div>
 
         <!-- Search + Add Task -->
