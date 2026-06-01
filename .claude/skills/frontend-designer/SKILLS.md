@@ -1,6 +1,7 @@
 ---
 name: frontend-design
 description: Design system and UI component guide for the TodoApp Django project. Use this skill whenever building or updating any template in todoapp/templates/todoapp/ — including new pages, forms, tables, flash messages, auth pages, profile pages, task pages, or any UI component. Must be consulted before writing any template HTML. Ensures Tailwind-only styling, vanilla JS, and visual consistency across register.html, login.html, todo.html, add_task.html, and profile.html.
+
 ---
 
 # Frontend Design — TodoApp

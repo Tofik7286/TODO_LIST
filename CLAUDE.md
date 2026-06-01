@@ -39,22 +39,63 @@ python manage.py createsuperuser
 This is a Django 6.x project with a single app `todoapp`. The project layout follows standard Django conventions:
 
 - `todo_list/` — project config package (settings, root URL conf, wsgi/asgi)
-- `todoapp/` — the sole Django app; contains views, models, URLs, templates, and migrations
+- `todoapp/` — the sole Django app; contains views, models, forms, URLs, templates, admin, and migrations
 
 **URL routing:** `todo_list/urls.py` includes all routes from `todoapp/urls.py` at the root path (`""`).
 
 **Current routes:**
-| URL | View | Template |
-|-----|------|----------|
-| `/` | `todo` | `todoapp/todo.html` |
-| `/register/` | `register` | `todoapp/register.html` |
-| `/login/` | `login` | `todoapp/login.html` |
+| URL | View | Template | Auth required |
+|-----|------|----------|---------------|
+| `/` | `todo` | `todoapp/todo.html` | Yes |
+| `/register/` | `register` | `todoapp/register.html` | No |
+| `/login/` | `login` | `todoapp/login.html` | No |
+| `/logout/` | `logout_view` | — (redirects to login) | Yes |
+| `/profile/` | `profile` | `todoapp/profile.html` | Yes |
+| `/tasks/add/` | `add_task` | `todoapp/add_task.html` | Yes |
 
 **Templates** live in `todoapp/templates/todoapp/` and are loaded via `APP_DIRS = True`.
 
-**Database:** SQLite (`db.sqlite3` at project root). No models are defined yet — `todoapp/models.py` is empty and migrations only contain the initial empty migration.
+**Database:** SQLite (`db.sqlite3` at project root).
 
-**Auth:** Django's built-in `django.contrib.auth` is installed but not yet wired to the register/login views (views currently just render placeholder templates).
+## Models
+
+### Task (`todoapp/models.py`)
+
+```python
+class Task(models.Model):
+    user        = ForeignKey(User, on_delete=CASCADE, related_name='tasks')
+    title       = CharField(max_length=255)
+    description = TextField()
+    category    = CharField(max_length=100)
+    priority    = CharField(choices=Priority.choices)   # Low / Medium / High
+    status      = CharField(choices=Status.choices)     # Pending / In Progress / Completed
+    created_at  = DateTimeField(auto_now_add=True)
+    due_date    = DateField()
+```
+
+**No custom User model** — the project uses Django's built-in `django.contrib.auth.models.User`. Registration maps fields as: `email → username`, `email → email`, `name → first_name`. Authentication is done via `username` (which equals the email address).
+
+## Forms (`todoapp/forms.py`)
+
+| Form | Purpose |
+|------|---------|
+| `UserRegistrationForm` | ModelForm on `User`; maps name/email/password; validates unique email |
+| `LoginForm` | Plain `forms.Form`; email + password fields |
+| `TaskForm` | ModelForm on `Task`; all fields except `user` and `created_at` |
+| `ProfileForm` | Plain `forms.Form`; update display name and/or change password with current-password verification |
+
+`ProfileForm` receives the `user` instance via `__init__` kwargs (`user=request.user`) for current-password validation.
+
+## Admin (`todoapp/admin.py`)
+
+Both `User` (re-registered, customized) and `Task` are registered. The `User` admin displays `email`, `first_name`, `is_active`, and `date_joined`, and is searchable by email and name. `TaskAdmin` supports filtering by priority, status, and category.
+
+## Auth conventions
+
+- **Login authenticates by email.** `username` is set equal to `email` at registration time, so `authenticate(username=email, ...)` works with Django's default backend.
+- Unauthenticated access to protected views redirects to `/login/` (configured via `LOGIN_URL` or the decorator default).
+- Logout is a GET-accessible view (intentional simplicity for this project).
+- Password changes use `update_session_auth_hash` to keep the user logged in after the update.
 
 ## Development Workflow
 
@@ -97,8 +138,8 @@ Always use `forms.Form` or `forms.ModelForm` for user input.
 
 ## Security
 
-- `@login_required` on authenticated pages.
-- **Verify ownership** before any read/update/delete of user-specific data — never let users touch objects they don't own.
+- `@login_required` on all authenticated pages.
+- **Verify ownership** before any read/update/delete of user-specific data — never let users touch objects they don't own. Tasks are always filtered by `user=request.user`.
 - Enforce object-level permissions where needed.
 - Keep CSRF protection on; validate and escape all user input.
 - Use the Django messages framework for user feedback.
