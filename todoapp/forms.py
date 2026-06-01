@@ -50,3 +50,48 @@ class TaskForm(forms.ModelForm):
     class Meta:
         model = Task
         fields = ['title', 'description', 'category', 'priority', 'status', 'due_date']
+
+
+class ProfileForm(forms.Form):
+    name = forms.CharField(
+        max_length=150,
+        required=False,
+        widget=forms.TextInput(attrs={'placeholder': 'Your full name'}),
+    )
+    current_password = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput(attrs={'placeholder': '••••••••'}),
+    )
+    new_password = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput(attrs={'placeholder': '••••••••'}),
+    )
+    confirm_password = forms.CharField(
+        required=False,
+        widget=forms.PasswordInput(attrs={'placeholder': '••••••••'}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        current = cleaned_data.get('current_password')
+        new = cleaned_data.get('new_password')
+        confirm = cleaned_data.get('confirm_password')
+
+        any_filled = any([current, new, confirm])
+        if any_filled:
+            if not current:
+                self.add_error('current_password', 'Enter your current password.')
+            if not new:
+                self.add_error('new_password', 'Enter a new password.')
+            if not confirm:
+                self.add_error('confirm_password', 'Confirm your new password.')
+            if current and self.user and not self.user.check_password(current):
+                self.add_error('current_password', 'Current password is incorrect.')
+            if new and confirm and new != confirm:
+                self.add_error('confirm_password', 'New passwords do not match.')
+
+        return cleaned_data
