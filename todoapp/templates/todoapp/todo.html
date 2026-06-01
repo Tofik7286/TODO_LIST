@@ -45,7 +45,7 @@
                     {% for task in tasks %}
                     <tr class="hover:bg-gray-50 transition-colors">
                         <td class="px-6 py-4 text-gray-900">{{ task.title }}</td>
-                        <td class="px-6 py-4 text-gray-500">{{ task.created_at }}</td>
+                        <td class="px-6 py-4 text-gray-500">{{ task.created_at|date:"M d, Y" }}</td>
                         <td class="px-6 py-4">
                             <div class="flex gap-2">
                                 <button type="button" class="rounded-md bg-green-100 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-200 transition-colors">Finish</button>

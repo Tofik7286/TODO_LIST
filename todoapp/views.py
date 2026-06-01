@@ -2,11 +2,13 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.auth.decorators import login_required
 from .forms import UserRegistrationForm, LoginForm
+from .models import Task
 
 
 @login_required
 def todo(request):
-    return render(request, 'todoapp/todo.html')
+    tasks = Task.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'todoapp/todo.html', {'tasks': tasks})
 
 
 def register(request):
