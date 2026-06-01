@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login as auth_login
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from .forms import UserRegistrationForm, LoginForm
 from .models import Task
@@ -40,3 +40,9 @@ def login(request):
         form = LoginForm()
 
     return render(request, 'todoapp/login.html', {'form': form})
+
+
+@login_required
+def logout_view(request):
+    auth_logout(request)
+    return redirect('login')
