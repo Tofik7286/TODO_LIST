@@ -5,7 +5,7 @@ Create a spec file and feature branch for the next step.
 **Usage:** `/create-spec <step_number> <feature_name>`
 **Example:** `/create-spec 2 registration`
 
-**Allowed tools:** Read, Write, Glob
+**Allowed tools:** Read, Write, Glob, Bash (git:*)
 
 **User input:** $ARGUMENTS
 
@@ -15,7 +15,21 @@ Create a spec file and feature branch for the next step.
 
 ---
 
-## Step 1 — Parse Arguments
+## Step 1 — Check Working Directory is Clean
+
+Run `git status` and check for uncommitted, unstaged, or untracked files.
+
+If any exist, stop immediately and print:
+
+```
+Working directory is not clean. Please commit or stash your changes before proceeding.
+```
+
+**DO NOT CONTINUE until the working directory is clean.**
+
+---
+
+## Step 2 — Parse Arguments
 
 From `$ARGUMENTS` extract:
 
@@ -27,12 +41,44 @@ From `$ARGUMENTS` extract:
    - Only `a-z`, `0-9`, and `-`
    - Maximum 40 characters
    - Example: `registration`, `login-logout`
+4. `branch_name` — format: `feature/<feature_slug>`
+   - Example: `feature/registration`
 
-If you cannot infer all three from `$ARGUMENTS`, ask the user to clarify before proceeding.
+If you cannot infer these from `$ARGUMENTS`, ask the user to clarify before proceeding.
 
 ---
 
-## Step 2 — Research the Codebase
+## Step 3 — Check Branch Name is Not Taken
+
+Run `git branch` to list existing branches.
+
+If `branch_name` is already taken, append a number and increment until free:
+`feature/registration-01`, `feature/registration-02`, etc.
+
+---
+
+## Step 4 — Switch to Main and Pull Latest
+
+Run:
+
+```bash
+git checkout main
+git pull origin main
+```
+
+---
+
+## Step 5 — Create and Switch to the Feature Branch
+
+Run:
+
+```bash
+git checkout -b <branch_name>
+```
+
+---
+
+## Step 6 — Research the Codebase
 
 Read the following files before writing the spec:
 
@@ -52,7 +98,7 @@ Step <step_number> (<feature_title>) is already marked complete in CLAUDE.md. No
 
 ---
 
-## Step 3 — Write the Spec
+## Step 7 — Write the Spec
 
 Generate a spec document using this exact structure:
 
@@ -109,7 +155,7 @@ A specific, testable checklist. Each item must be something that can be verified
 
 ---
 
-## Step 4 — Save the Spec
+## Step 8 — Save the Spec
 
 Save the spec to:
 
@@ -121,12 +167,13 @@ Create the `.claude/specs/` directory if it does not exist.
 
 ---
 
-## Step 5 — Report to the User
+## Step 9 — Report to the User
 
 Print a short summary in this exact format:
 
 ```
-Spec created: .claude/specs/<step_number>-<feature_slug>.md
+Spec created:   .claude/specs/<step_number>-<feature_slug>.md
+Branch created: <branch_name>
 ```
 
 Then tell the user:
