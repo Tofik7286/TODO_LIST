@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .forms import UserRegistrationForm, LoginForm, ProfileForm
+from .forms import UserRegistrationForm, LoginForm, ProfileForm, TaskForm
 from .models import Task
 
 
@@ -41,6 +41,21 @@ def login(request):
         form = LoginForm()
 
     return render(request, 'todoapp/login.html', {'form': form})
+
+
+@login_required
+def add_task(request):
+    if request.method == 'POST':
+        form = TaskForm(request.POST)
+        if form.is_valid():
+            task = form.save(commit=False)
+            task.user = request.user
+            task.save()
+            messages.success(request, 'Task created successfully.')
+            return redirect('todo')
+    else:
+        form = TaskForm()
+    return render(request, 'todoapp/add_task.html', {'form': form})
 
 
 @login_required
