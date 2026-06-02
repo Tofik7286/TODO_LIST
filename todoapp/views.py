@@ -2,14 +2,83 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db.models import Q
+import datetime
 from .forms import UserRegistrationForm, LoginForm, ProfileForm, TaskForm
 from .models import Task
 
 
 @login_required
 def todo(request):
-    tasks = Task.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'todoapp/todo.html', {'tasks': tasks})
+    q           = request.GET.get('q', '').strip()
+    status      = request.GET.get('status', '')
+    priority    = request.GET.get('priority', '')
+    category    = request.GET.get('category', '')
+    date_preset = request.GET.get('date_preset', '')
+    date_from   = request.GET.get('date_from', '')
+    date_to     = request.GET.get('date_to', '')
+
+    tasks = Task.objects.filter(user=request.user)
+
+    if q:
+        tasks = tasks.filter(Q(title__icontains=q) | Q(description__icontains=q))
+    if status:
+        tasks = tasks.filter(status=status)
+    if priority:
+        tasks = tasks.filter(priority=priority)
+    if category:
+        tasks = tasks.filter(category=category)
+
+    today = datetime.date.today()
+    if date_preset == 'this_week':
+        start = today - datetime.timedelta(days=today.weekday())
+        tasks = tasks.filter(due_date__gte=start, due_date__lte=today)
+    elif date_preset == 'last_week':
+        start = today - datetime.timedelta(days=today.weekday() + 7)
+        end   = start + datetime.timedelta(days=6)
+        tasks = tasks.filter(due_date__gte=start, due_date__lte=end)
+    elif date_preset == 'this_month':
+        start = today.replace(day=1)
+        tasks = tasks.filter(due_date__gte=start, due_date__lte=today)
+    elif date_preset == 'last_month':
+        first_of_this_month = today.replace(day=1)
+        end   = first_of_this_month - datetime.timedelta(days=1)
+        start = end.replace(day=1)
+        tasks = tasks.filter(due_date__gte=start, due_date__lte=end)
+    elif date_preset == 'custom':
+        if date_from:
+            tasks = tasks.filter(due_date__gte=date_from)
+        if date_to:
+            tasks = tasks.filter(due_date__lte=date_to)
+
+    tasks = tasks.order_by('-created_at')
+
+    categories = (
+        Task.objects.filter(user=request.user)
+        .values_list('category', flat=True)
+        .distinct()
+        .order_by('category')
+    )
+
+    current_filters = {
+        'q': q,
+        'status': status,
+        'priority': priority,
+        'category': category,
+        'date_preset': date_preset,
+        'date_from': date_from,
+        'date_to': date_to,
+    }
+    is_filtered = any(current_filters.values())
+
+    return render(request, 'todoapp/todo.html', {
+        'tasks': tasks,
+        'categories': categories,
+        'current_filters': current_filters,
+        'is_filtered': is_filtered,
+        'status_choices': Task.Status.choices,
+        'priority_choices': Task.Priority.choices,
+    })
 
 
 def register(request):
