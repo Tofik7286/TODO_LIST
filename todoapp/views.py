@@ -20,36 +20,50 @@ def todo(request):
 
     tasks = Task.objects.filter(user=request.user)
 
+    combined = Q()
+
     if q:
-        tasks = tasks.filter(Q(title__icontains=q) | Q(description__icontains=q))
+        combined |= (
+            Q(title__icontains=q) |
+            Q(description__icontains=q) |
+            Q(category__icontains=q) |
+            Q(priority__icontains=q) |
+            Q(status__icontains=q)
+        )
     if status:
-        tasks = tasks.filter(status=status)
+        combined |= Q(status=status)
     if priority:
-        tasks = tasks.filter(priority=priority)
+        combined |= Q(priority=priority)
     if category:
-        tasks = tasks.filter(category=category)
+        combined |= Q(category=category)
 
     today = datetime.date.today()
     if date_preset == 'this_week':
         start = today - datetime.timedelta(days=today.weekday())
-        tasks = tasks.filter(due_date__gte=start, due_date__lte=today)
+        combined |= Q(due_date__gte=start, due_date__lte=today)
     elif date_preset == 'last_week':
         start = today - datetime.timedelta(days=today.weekday() + 7)
         end   = start + datetime.timedelta(days=6)
-        tasks = tasks.filter(due_date__gte=start, due_date__lte=end)
+        combined |= Q(due_date__gte=start, due_date__lte=end)
     elif date_preset == 'this_month':
         start = today.replace(day=1)
-        tasks = tasks.filter(due_date__gte=start, due_date__lte=today)
+        combined |= Q(due_date__gte=start, due_date__lte=today)
     elif date_preset == 'last_month':
         first_of_this_month = today.replace(day=1)
         end   = first_of_this_month - datetime.timedelta(days=1)
         start = end.replace(day=1)
-        tasks = tasks.filter(due_date__gte=start, due_date__lte=end)
+        combined |= Q(due_date__gte=start, due_date__lte=end)
     elif date_preset == 'custom':
+        date_q = Q()
         if date_from:
-            tasks = tasks.filter(due_date__gte=date_from)
+            date_q &= Q(due_date__gte=date_from)
         if date_to:
-            tasks = tasks.filter(due_date__lte=date_to)
+            date_q &= Q(due_date__lte=date_to)
+        if date_q:
+            combined |= date_q
+
+    if combined:
+        tasks = tasks.filter(combined)
 
     tasks = tasks.order_by('-created_at')
 
