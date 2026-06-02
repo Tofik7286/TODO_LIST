@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -56,6 +56,20 @@ def add_task(request):
     else:
         form = TaskForm()
     return render(request, 'todoapp/add_task.html', {'form': form})
+
+
+@login_required
+def edit_task(request, task_id):
+    task = get_object_or_404(Task, pk=task_id, user=request.user)
+    if request.method == 'POST':
+        form = TaskForm(request.POST, instance=task)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Task updated successfully.')
+            return redirect('todo')
+    else:
+        form = TaskForm(instance=task)
+    return render(request, 'todoapp/edit_task.html', {'form': form, 'task': task})
 
 
 @login_required
