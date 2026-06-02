@@ -2,14 +2,97 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db.models import Q
+import datetime
 from .forms import UserRegistrationForm, LoginForm, ProfileForm, TaskForm
 from .models import Task
 
 
 @login_required
 def todo(request):
-    tasks = Task.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'todoapp/todo.html', {'tasks': tasks})
+    q           = request.GET.get('q', '').strip()
+    status      = request.GET.get('status', '')
+    priority    = request.GET.get('priority', '')
+    category    = request.GET.get('category', '')
+    date_preset = request.GET.get('date_preset', '')
+    date_from   = request.GET.get('date_from', '')
+    date_to     = request.GET.get('date_to', '')
+
+    tasks = Task.objects.filter(user=request.user)
+
+    combined = Q()
+
+    if q:
+        combined |= (
+            Q(title__icontains=q) |
+            Q(description__icontains=q) |
+            Q(category__icontains=q) |
+            Q(priority__icontains=q) |
+            Q(status__icontains=q)
+        )
+    if status:
+        combined |= Q(status=status)
+    if priority:
+        combined |= Q(priority=priority)
+    if category:
+        combined |= Q(category=category)
+
+    today = datetime.date.today()
+    if date_preset == 'this_week':
+        start = today - datetime.timedelta(days=today.weekday())
+        combined |= Q(due_date__gte=start, due_date__lte=today)
+    elif date_preset == 'last_week':
+        start = today - datetime.timedelta(days=today.weekday() + 7)
+        end   = start + datetime.timedelta(days=6)
+        combined |= Q(due_date__gte=start, due_date__lte=end)
+    elif date_preset == 'this_month':
+        start = today.replace(day=1)
+        combined |= Q(due_date__gte=start, due_date__lte=today)
+    elif date_preset == 'last_month':
+        first_of_this_month = today.replace(day=1)
+        end   = first_of_this_month - datetime.timedelta(days=1)
+        start = end.replace(day=1)
+        combined |= Q(due_date__gte=start, due_date__lte=end)
+    elif date_preset == 'custom':
+        date_q = Q()
+        if date_from:
+            date_q &= Q(due_date__gte=date_from)
+        if date_to:
+            date_q &= Q(due_date__lte=date_to)
+        if date_q:
+            combined |= date_q
+
+    if combined:
+        tasks = tasks.filter(combined)
+
+    tasks = tasks.order_by('-created_at')
+
+    categories = (
+        Task.objects.filter(user=request.user)
+        .values_list('category', flat=True)
+        .distinct()
+        .order_by('category')
+    )
+
+    current_filters = {
+        'q': q,
+        'status': status,
+        'priority': priority,
+        'category': category,
+        'date_preset': date_preset,
+        'date_from': date_from,
+        'date_to': date_to,
+    }
+    is_filtered = any(current_filters.values())
+
+    return render(request, 'todoapp/todo.html', {
+        'tasks': tasks,
+        'categories': categories,
+        'current_filters': current_filters,
+        'is_filtered': is_filtered,
+        'status_choices': Task.Status.choices,
+        'priority_choices': Task.Priority.choices,
+    })
 
 
 def register(request):
