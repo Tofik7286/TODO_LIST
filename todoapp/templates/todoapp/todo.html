@@ -11,18 +11,25 @@
     <div class="w-full max-w-4xl mx-auto">
 
         <!-- Header -->
-        <div class="flex items-start justify-between mb-8">
-            <div>
+        <div class="flex items-center justify-between mb-8 gap-3">
+            <div class="min-w-0">
                 <h1 class="text-2xl font-bold text-gray-900">My Tasks</h1>
                 <p class="text-sm text-gray-500 mt-1">Manage your daily tasks</p>
             </div>
-            <div class="flex items-center gap-3">
-                <a href="{% url 'profile' %}" class="text-sm text-gray-600 hover:text-blue-600 transition-colors">
-                    {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.email }}{% endif %}
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <a href="{% url 'profile' %}"
+                   class="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition-colors group"
+                   title="{% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.email }}{% endif %}">
+                    <span class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-700 group-hover:bg-blue-200 transition-colors flex-shrink-0">
+                        {% if request.user.first_name %}{{ request.user.first_name|first|upper }}{% else %}{{ request.user.email|first|upper }}{% endif %}
+                    </span>
+                    <span class="hidden sm:inline truncate max-w-[160px]">
+                        {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.email }}{% endif %}
+                    </span>
                 </a>
                 <form method="POST" action="{% url 'logout' %}">
                     {% csrf_token %}
-                    <button type="submit" class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-500 hover:border-red-300 hover:text-red-600 transition-colors">
+                    <button type="submit" class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-500 hover:border-red-300 hover:text-red-600 transition-colors whitespace-nowrap">
                         Logout
                     </button>
                 </form>
