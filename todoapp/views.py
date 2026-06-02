@@ -73,6 +73,29 @@ def edit_task(request, task_id):
 
 
 @login_required
+def bulk_delete_tasks(request):
+    if request.method == 'POST':
+        task_ids = request.POST.getlist('task_ids')
+        if task_ids:
+            deleted_count, _ = Task.objects.filter(pk__in=task_ids, user=request.user).delete()
+            if deleted_count:
+                noun = 'task' if deleted_count == 1 else 'tasks'
+                messages.success(request, f'{deleted_count} {noun} deleted successfully.')
+        else:
+            messages.warning(request, 'No tasks selected.')
+    return redirect('todo')
+
+
+@login_required
+def delete_task(request, task_id):
+    task = get_object_or_404(Task, pk=task_id, user=request.user)
+    if request.method == 'POST':
+        task.delete()
+        messages.success(request, 'Task deleted successfully.')
+    return redirect('todo')
+
+
+@login_required
 def logout_view(request):
     auth_logout(request)
     return redirect('login')
